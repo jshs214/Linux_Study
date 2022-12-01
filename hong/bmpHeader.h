@@ -29,6 +29,6 @@ typedef struct {
 	unsigned char rgbGreen;
 	unsigned char rgbRed;
 	unsigned char rgbReserved;
-} BGBQUAD;
+} RGBQUAD;
 #endif
 

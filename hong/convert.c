@@ -15,8 +15,7 @@ typedef struct tagRGBQUAD{
 
 int main(int argc, char** argv) {
 	FILE* fp; 
-	RGBQUAD palrgb[256];
-
+	RGBQUAD *palrgb;
 	/* BMP FILE INFO */
 	unsigned short int type; 
 	unsigned int file_size; 
@@ -37,12 +36,12 @@ int main(int argc, char** argv) {
 	char input[128], output[128];
 
 	int i, j, size; 
-	int xFactor = 2, yFactor = 2; 
-	float srcX, srcY;
+
 	int index; 
 	float r,g,b,gray;
 	int graysize; 
 	int index2;
+
 
 	unsigned char *grayimg, *inimg, *outimg;
 
@@ -76,69 +75,61 @@ int main(int argc, char** argv) {
 
 	size=widthbytes(bits * width); 
 	graysize = widthbytes(8 * width);
+	printf("/////fread/////\n");
+	printf("size : %d \n",size);
+	printf("bits : %d, width : %d, heights : %d\n", bits,width,height);
+	
+	//if(!imagesize) 
+	imagesize= size * height;
 
-	if(!imagesize) 
-		imagesize=height*size;
+	printf("imagesize : %d\n",imagesize);
+
+	palrgb = (RGBQUAD*)malloc(sizeof(RGBQUAD)* ncolors);
+	fread(palrgb, sizeof(RGBQUAD), ncolors ,fp);
 
 	inimg=(BYTE*)malloc(sizeof(BYTE)*imagesize); 
-	outimg=(BYTE*)malloc(sizeof(BYTE)*imagesize*xFactor*yFactor); 
+	outimg=(BYTE*)malloc(sizeof(BYTE)*width * height *3);
 	fread(inimg, sizeof(BYTE), imagesize, fp); 
 
 	fclose(fp);
 
+	int pos =0;
+	for(j=0; j<width*height / 8; j++) {
+		for(i = 7; i >=0; --i){
+			int num = inimg[j];
+			int res = num >> i & 1;
+			outimg[pos++]=palrgb[res].rgbBlue;
+			outimg[pos++]=palrgb[res].rgbGreen;
+			outimg[pos++]=palrgb[res].rgbRed;
+		}	
 
-	for(i=0; i<height*3; i+=3) { 
-		for(j=0; j<width*3; j+=3) {
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor)]=inimg[j+(i*width)]; 
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor)+2]=inimg[j+(i*width)+1]; 
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor)+2]=inimg[j+(i*width)+2];
-			
+	}
 
-			//Garo
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)]
-			= (inimg[j+(i*width) ] + inimg[j+3+(i*width)])/2 ; 
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)+1]
-			= (inimg[j + 1+ (i*width)] + inimg[j+3 +(i*width)+1] )/2; 
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)+2]
-			= (inimg[j+ 2+(i*width)] +  inimg[j+3+(i*width)+2]) /2;
-			// Sero
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor) +(width*xFactor *3) ]
-			= (inimg[j+(i*width) ] + inimg[j+( (i+3) *width) ])/2 ; 
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor)+ (width*xFactor *3)+1]
-			= (inimg[j + 1 +(i*width)] + inimg[j +( (i+3) *width)+1] )/2; 
-			outimg[(j*xFactor)+(width*xFactor*i*yFactor)+(width*xFactor *3) +2]
-			= (inimg[j + 2 +(i*width)] +  inimg[j+( (i+3) *width)+2]) /2;
-
-			//Cross
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)+(width*xFactor*3)] 
-			= (inimg[j+(i*width)] + inimg[(j+3)+(i*width)] 
-			+inimg[j+((i+3)*width)] + inimg[(j+3) + ((i+3)*width)]) / 4;
-
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)+(width*xFactor*3)+1] 
-			= (inimg[j+(i*width)+1] + inimg[(j+3)+(i*width)+1] 
-			+inimg[j+((i+3)*width)+1] + inimg[(j+3) + ((i+3)*width)+1]) / 4;
-
-			outimg[(j*xFactor+3)+(width*xFactor*i*yFactor)+(width*xFactor*3)+2] 
-			= (inimg[j+(i*width)+2] + inimg[(j+3)+(i*width)+2] 
-			+inimg[j+((i+3)*width)+2] + inimg[(j+3) + ((i+3)*width)+2]) / 4;
-			
-
-
-		};
-	};
-
-
-
-
-	width*=xFactor, height*=yFactor; 
-	size=widthbytes(bits*width); 
-	imagesize=height*size; 
-//	offset+=256*sizeof(RGBQUAD);
+	//width*= , height*=3 ; 
+	//size=widthbytes(bits*width); 
+	//imagesize=height*size; 
+	//offset+=256*sizeof(RGBQUAD);
 
 	if((fp=fopen(output, "wb"))==NULL) { 
 		fprintf(stderr, "Error : Failed to open file...�쯰"); 
 		return -1;
 	}
+	
+	printf("\n/////fwrite/////\n");	
+	bits = 24;
+	imagesize = width*height *3;
+	ncolors = 0;
+	
+	file_size = sizeof(unsigned short int)*3 +
+		    sizeof(unsigned int) * 2 +
+	       	sizeof(int)*4 + sizeof(unsigned int) * 5 +
+	       sizeof(unsigned short int) *2	+ imagesize;
+	
+	offset = sizeof(unsigned short int)*3 +
+	        sizeof(unsigned int) *2 +	
+		sizeof(int)*4 + 
+		sizeof(unsigned int) * 5 +
+	       sizeof(unsigned short int) *2;
 
 	fwrite(&type, sizeof(unsigned short int), 1, fp); 
 	fwrite(&file_size, sizeof(unsigned int), 1, fp); 
@@ -157,7 +148,7 @@ int main(int argc, char** argv) {
 	fwrite(&vresolution, sizeof(int), 1, fp); 
 	fwrite(&ncolors, sizeof(unsigned int), 1, fp); 
 	fwrite(&importantcolors, sizeof(unsigned int), 1, fp);
-//	fwrite(palrgb, sizeof(unsigned int), 256, fp); 
+	//fwrite(palrgb, sizeof(unsigned int), 256, fp); 
 
 	fwrite(outimg, sizeof(unsigned char), imagesize, fp);
 
