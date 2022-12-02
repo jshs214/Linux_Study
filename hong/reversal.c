@@ -76,6 +76,7 @@ void main(int argc, char** argv)
 	fclose(fp);
 
 	//V
+	/*
 	for(i = 0; i < height; i++) {
 		for(j = 0 ; j < width; j++) {
 			outimg[i*size + 3*j+0] = ~inimg[size*i + 3*j +0];
@@ -83,7 +84,10 @@ void main(int argc, char** argv)
 			outimg[i*size + 3*j+2] = ~inimg[size*i + 3*j +2];
 		};
 	};	
-
+	*/
+	for(i = 0; i < height * width * 3; i++){
+		outimg[i] = inimg[i];
+	}
 
 	offset += 256*sizeof(RGBQUAD); 
 
