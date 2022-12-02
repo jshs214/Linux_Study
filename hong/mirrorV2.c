@@ -75,37 +75,25 @@ void main(int argc, char** argv)
 	fread(inimg, sizeof(BYTE), imagesize, fp);
 	fclose(fp);
 
+	//V
 	for(i = 0; i < height; i++) {
-		index = width * i * size; 
 		for(j = 0 ; j < width; j++) {
-			outimg[index+3*j+0] = inimg[size*i+3*j+0];
-			outimg[index+3*j+1] = inimg[size*i+3*j+1];
-			outimg[index+3*j+2] = inimg[size*i+3*j+2];
+			outimg[i*size + 3*j+0] = inimg[size*(height -i) + 3*j +0];
+			outimg[i*size + 3*j+1] = inimg[size*(height -i) + 3*j +1];
+			outimg[i*size + 3*j+2] = inimg[size*(height -i) + 3*j +2];
 		};
 	};	
-	/*	
-	// Vertical	
+ 	
+	//h
 	for(i = 0; i < height; i++) {
-		index = (height-i-1) * size; 
 		for(j = 0 ; j < width; j++) {
-			outimg[index+3*j+0] = inimg[size*i+3*j+0];
-			outimg[index+3*j+1] = inimg[size*i+3*j+1];
-			outimg[index+3*j+2] = inimg[size*i+3*j+2];
+			outimg[i*size + 3*j+0] = inimg[size* i + 3 * (size - j) + 0];
+			outimg[i*size + 3*j+1] = inimg[size* i + 3 * (size - j) + 1];
+			outimg[i*size + 3*j+2] = inimg[size* i + 3 * (size - j) + 2];
 		};
-		
-	};
-       	
-	//Horizental
-	for(i = 0; i < height; i++) {
-		index = i * size; 
-		for(j = 0 ; j < width; j++) {
-			outimg[index+3*j+0] = inimg[size*i-3*j+0];
-			outimg[index+3*j+1] = inimg[size*i-3*j+1];
-			outimg[index+3*j+2] = inimg[size*i-3*j+2];
-		};
-	};		
-	*/
- 
+	};	
+
+
 	offset += 256*sizeof(RGBQUAD); 
 
 	if((fp = fopen(output, "wb")) == NULL) {
