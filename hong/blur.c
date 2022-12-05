@@ -112,9 +112,9 @@ int main(int argc, char** argv)
 	}
 	memset(outimg, 0, sizeof(ubyte)*imageSize);
 
-	float kernel[3][3] = { {-1, -1, -1},
-		{-1 , 9, -1},
-		{ -1, -1, -1} };
+	float kernel[3][3] = { {0, -1, 0},
+		{-1 , 5, -1},
+		{ 0, -1, 0} };
 	//padimg * kernel
 	for(y = 1; y < bmpInfoHeader.biHeight + 1; y++) { 
 		for(x = elemSize; x < (bmpInfoHeader.biWidth + 1) * elemSize; x+=elemSize) {
