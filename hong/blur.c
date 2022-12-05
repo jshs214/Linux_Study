@@ -14,7 +14,7 @@ typedef unsigned char ubyte;
 inline unsigned char clip(int value, int min, int max);
 unsigned char clip(int value, int min, int max)
 {
-    return(value > max? max : value < min? min : value);
+	return(value > max? max : value < min? min : value);
 }
 
 int main(int argc, char** argv) 
@@ -66,19 +66,43 @@ int main(int argc, char** argv)
 				((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight + 2) *2*elemSize)) );
 
 	printf("padimg : %ld \n",  sizeof(ubyte)* (imageSize +
-		    ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight + 2) *2)));
+				((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight + 2) *2)));
 	printf("inimg : %ld \n",  sizeof(ubyte)* (imageSize));
-	
+
 	fread(inimg, sizeof(ubyte), imageSize, fp); 
 	fclose(fp);
 
-	memset(padimg, 0, sizeof(ubyte) *
-			(imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight+2)*2)) );
+//	memset(padimg, 0, sizeof(ubyte) *
+//			(imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight+2)*2)) );
+
 	//padimg -> image
 	for(y = 0; y< bmpInfoHeader.biHeight +2; y++){
 		for(x = 0; x<bmpInfoHeader.biWidth +2; x++){
-			if(y == 0 || y == bmpInfoHeader.biHeight +1
-			   || x == 0 || x == bmpInfoHeader.biWidth +1){ }
+			if(y == 0)
+			{
+				padimg[y*padsize + 3*x+0] = inimg[size*(y) + 3*(x) +0];
+				padimg[y*padsize + 3*x+1] = inimg[size*(y) + 3*(x) +1];
+				padimg[y*padsize + 3*x+2] = inimg[size*(y) + 3*(x) +2];
+			}
+			else if(y == bmpInfoHeader.biHeight +1)
+			{
+				padimg[y*padsize + 3*x+0] = inimg[size*(y-2) + 3*(x) +0];
+				padimg[y*padsize + 3*x+1] = inimg[size*(y-2) + 3*(x) +1];
+				padimg[y*padsize + 3*x+2] = inimg[size*(y-2) + 3*(x) +2];
+			}
+			else if(x == 0)	//left
+			{
+				padimg[y*padsize + 3*x+0] = inimg[size*(y-1) + 3*(x) +0];
+				padimg[y*padsize + 3*x+1] = inimg[size*(y-1) + 3*(x) +1];
+				padimg[y*padsize + 3*x+2] = inimg[size*(y-1) + 3*(x) +2];			
+			}
+			else if(x == bmpInfoHeader.biWidth +1)	//right
+			{
+				padimg[y*padsize + 3*x+0] = inimg[size*(y-1) + 3*(x-2) +0];
+				padimg[y*padsize + 3*x+1] = inimg[size*(y-1) + 3*(x-2) +1];
+				padimg[y*padsize + 3*x+2] = inimg[size*(y-1) + 3*(x-2) +2];			
+			}
+
 			else {
 				padimg[y*padsize + 3*x+0] = inimg[size*(y-1) + 3*(x-1) +0];
 				padimg[y*padsize + 3*x+1] = inimg[size*(y-1) + 3*(x-1) +1];
@@ -86,35 +110,29 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	
+	memset(outimg, 0, sizeof(ubyte)*imageSize);
+
 	float kernel[3][3] = { {-1, -1, -1},
 		{-1 , 9, -1},
 		{ -1, -1, -1} };
 	//padimg * kernel
 	for(y = 1; y < bmpInfoHeader.biHeight + 1; y++) { 
-		for(x = 1; x < (bmpInfoHeader.biWidth + 1) * elemSize; x+=elemSize) {
+		for(x = elemSize; x < (bmpInfoHeader.biWidth + 1) * elemSize; x+=elemSize) {
 			for(z = 0; z < elemSize; z++) {
 				float sum = 0.0;
 				for(int i = -1; i < 2; i++) {
 					for(int j = -1; j < 2; j++) {
-						sum += kernel[i+1][j+1]*inimg[(x-i*elemSize)+(y-j)*size+z];
+						sum += kernel[i+1][j+1]*padimg[(x+i*elemSize)+(y+j)*padsize+z];
+	
 					}
 				}
-				padimg[x+y*padsize+z] = clip(sum,0,255);
+				outimg[x-elemSize+(y-1)*size+z] = clip(sum,0,255);
 			}
 		}
 	}         
 
-	memset(outimg, 0, sizeof(ubyte)*imageSize);
-	for(y = 0; y< bmpInfoHeader.biHeight; y++){
-		for(x = 0; x<bmpInfoHeader.biWidth; x++){
-				outimg[y*size + 3*x+0] = padimg[padsize*(y+1) + 3*(x+1) +0];
-				outimg[y*size + 3*x+1] = padimg[padsize*(y+1) + 3*(x+1) +1];
-				outimg[y*size + 3*x+2] = padimg[padsize*(y+1) + 3*(x+1) +2];			
-		}
-	}
 
-	
+
 	/***** write bmp *****/ 
 	if((fp=fopen(argv[2], "wb"))==NULL) { 
 		fprintf(stderr, "Error : Failed to open file...₩n"); 
