@@ -114,43 +114,6 @@ int main(int argc, char** argv)
 		padimg[(bmpInfoHeader.biHeight+1)*padSize+z]=midimg[(bmpInfoHeader.biHeight-1)*size+z];
 		padimg[(bmpInfoHeader.biHeight+1)*padSize+padSize-elemSize+z]=midimg[(bmpInfoHeader.biHeight-1)*size+size-elemSize+z];
 	}
-	/*
-	//make padimg
-	for(y = 0; y< bmpInfoHeader.biHeight +2; y++){
-	for(x = 0; x<bmpInfoHeader.biWidth +2; x++){
-	if(y == 0)
-	{
-	padimg[y*padSize + 3*x+0] = midimg[size*(y) + 3*(x) +0];
-	padimg[y*padSize + 3*x+1] = midimg[size*(y) + 3*(x) +1];
-	padimg[y*padSize + 3*x+2] = midimg[size*(y) + 3*(x) +2];
-	}
-	else if(y == bmpInfoHeader.biHeight +1)
-	{
-	padimg[y*padSize + 3*x+0] = midimg[size*(y-2) + 3*(x) +0];
-	padimg[y*padSize + 3*x+1] = midimg[size*(y-2) + 3*(x) +1];
-	padimg[y*padSize + 3*x+2] = midimg[size*(y-2) + 3*(x) +2];
-	}
-	else if(x == 0)	//left
-	{
-	padimg[y*padSize + 3*x+0] = midimg[size*(y-1) + 3*(x) +0];
-	padimg[y*padSize + 3*x+1] = midimg[size*(y-1) + 3*(x) +1];
-	padimg[y*padSize + 3*x+2] = midimg[size*(y-1) + 3*(x) +2];			
-	}
-	else if(x == bmpInfoHeader.biWidth +1)	//right
-	{
-	padimg[y*padSize + 3*x+0] = midimg[size*(y-1) + 3*(x-2) +0];
-	padimg[y*padSize + 3*x+1] = midimg[size*(y-1) + 3*(x-2) +1];
-	padimg[y*padSize + 3*x+2] = midimg[size*(y-1) + 3*(x-2) +2];			
-	}
-
-	else {
-	padimg[y*padSize + 3*x+0] = midimg[size*(y-1) + 3*(x-1) +0];
-	padimg[y*padSize + 3*x+1] = midimg[size*(y-1) + 3*(x-1) +1];
-	padimg[y*padSize + 3*x+2] = midimg[size*(y-1) + 3*(x-1) +2];			
-	}
-	}
-	}
-	*/
 
 	// define the xfirter, yfilter
 	float xfilter[3][3] = {{-1, 0, 1 },
