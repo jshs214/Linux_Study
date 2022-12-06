@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 	RGBQUAD palrgb[256];
 
 	char input[128], output[128];
+	int noise=0;
 
 	float r, g, b, gray;
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
 
 	strcpy(input, argv[1]);
 	strcpy(output, argv[2]);
+	noise = atoi(argv[3]);
 
 	if((fp = fopen(input, "rb")) == NULL) {
 		fprintf(stderr, "Error : Failed to open file...\n");
@@ -59,7 +61,7 @@ int main(int argc, char** argv)
 
 	printf(" %d X %d\n ImageSize :(%d)\n", 
 			bmpInfoHeader.biWidth, bmpInfoHeader.biHeight,
-			bmpInfoHeader.biWidth*bmpInfoHeader.biHeight);
+			bmpInfoHeader.biWidth*bmpInfoHeader.biHeight*elemSize);
 
 
 	for(i = 0; i < imageSize; i++) {
@@ -68,13 +70,12 @@ int main(int argc, char** argv)
 	};
 
 	//rand
-	for(i = 0; i < 3000; i++) {	
+	for(i = 0; i < noise; i++) {	
 		int randValue = rand()%255;
-		//int value = rand()&0b11111111;
 		int x = rand()%(bmpInfoHeader.biWidth*
-				bmpInfoHeader.biHeight*elemSize);
+				bmpInfoHeader.biHeight);
 		for(int z = 0; z<elemSize; z++)
-			outimg[x+z] = clip(randValue,0,255);
+			outimg[x*elemSize+z] = clip(inimg[x*elemSize+z]+randValue,0,255);
 	}
 
 
