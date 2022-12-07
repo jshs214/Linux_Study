@@ -67,11 +67,13 @@ int main(int argc, char** argv)
 	inimg = (ubyte*)malloc(sizeof(ubyte)*imageSize); 
 	outimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
 	fread(inimg, sizeof(ubyte), imageSize, fp); 
-	fclose(fp);
 
 	int padSize = (bmpInfoHeader.biWidth + 2) * elemSize;
 	int addSize = (padSize + bmpInfoHeader.biHeight)*2;
+
 	padimg = (ubyte*)malloc(sizeof(ubyte)*(imageSize + addSize));
+	
+	fclose(fp);
 
 	/* make padding image */
 	memset(padimg, 0, (sizeof(ubyte)*imageSize + addSize));
@@ -79,7 +81,6 @@ int main(int argc, char** argv)
 	for(y = 0; y < bmpInfoHeader.biHeight; y++) {
 		for(x = 0; x < bmpInfoHeader.biWidth * elemSize; x+=elemSize) {
 			for(z = 0; z < elemSize; z++) {
-				//outimg[(x+elemSize)+(y+1)*size+z]=inimg[x+y*size+z];
 				padimg[(x+elemSize)+(y+1)*padSize+z]=inimg[x+y*size+z];
 			}
 		}
@@ -94,6 +95,7 @@ int main(int argc, char** argv)
 
 	for(x = 0; x < bmpInfoHeader.biWidth*elemSize; x++) { 
 		padimg[elemSize+x]=inimg[x];
+	
 		padimg[elemSize+x+(bmpInfoHeader.biHeight+1)*padSize]=inimg[x+(bmpInfoHeader.biHeight-1)*size];
 	}
 
@@ -126,7 +128,7 @@ int main(int argc, char** argv)
 				}
 				insertion(arr, 9);
 
-				outimg[(x-elemSize)+(y-1)*size+z] = arr[4];
+				outimg[(x-elemSize)+(y-1)*size+z] = arr[0];
 			}
 		}
 	}
