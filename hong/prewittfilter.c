@@ -115,13 +115,13 @@ int main(int argc, char** argv)
 		padimg[(bmpInfoHeader.biHeight+1)*padSize+padSize-elemSize+z]=midimg[(bmpInfoHeader.biHeight-1)*size+size-elemSize+z];
 	}
 
-	// define the xfirter, yfilter
-	float xfilter[3][3] = {{-1, 0, 1 },
-		{-2, 0, 2 },
-		{-1, 0, 1 } };
-	float yfilter[3][3] = {{1, 2, 1 },
+	// define the prewitt filter : xfirter, yfilter
+	float xfilter[3][3] = {{1, 0, -1 },
+		{1, 0, -1 },
+		{1, 0, -1 } };
+	float yfilter[3][3] = {{-1, -1, -1 },
 		{0, 0, 0 },
-		{-1, -2, -1 } };
+		{1, 1, 1 } };
 
 	memset(outimg, 0, sizeof(ubyte)*imageSize);
 	for(y = 1; y < bmpInfoHeader.biHeight + 1; y++) { 
