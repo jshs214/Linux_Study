@@ -37,12 +37,18 @@ int main(int argc, char** argv)
 	row = bmpInfoHeader.biWidth * RGB;
 	height = bmpInfoHeader.biHeight;
 	imagesize = row * height;
+	
+	/* Use palete 256 */
+	for(int i = 0; i< 256; i++){
+		palrgb[i].rgbBlue = i;	
+		palrgb[i].rgbGreen = i;	
+		palrgb[i].rgbRed = i;	
+	}
 
 	inimg = malloc(sizeof(unsigned char)*imagesize);
 	outimg = malloc(sizeof(unsigned char)*imagesize);
-
+	
 	fread(inimg, sizeof(unsigned char) *imagesize, 1, fp);
-
 	printf("fread : %ld\n", sizeof(unsigned char)*imagesize );
 
 	fclose(fp);
@@ -65,16 +71,22 @@ int main(int argc, char** argv)
 		outimg[i] = inimg[i];
 		outimg[i+1] = inimg[i+1];
 		outimg[i+2] = inimg[i+2];
-		printf("%d %d %d\n", outimg[i], outimg[i+1], outimg[i+2]);
+		//printf("%d %d %d\n", outimg[i], outimg[i+1], outimg[i+2]);
 	}
 	
+	bmpHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
+					sizeof(RGBQUAD) * 256;
 	
 	fwrite(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, after );
-	fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1 , after );
+	fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER) , 1 , after );
+	fwrite(&palrgb, sizeof(RGBQUAD), 256, after);
+	
 	fwrite(outimg, sizeof(unsigned char) * imagesize ,1, after);
 
 	fclose(after);
-
+	
+	free(inimg);
+	free(outimg);
 
 	return 0;
 }
