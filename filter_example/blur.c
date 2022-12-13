@@ -72,8 +72,8 @@ int main(int argc, char** argv)
 	fread(inimg, sizeof(ubyte), imageSize, fp); 
 	fclose(fp);
 
-//	memset(padimg, 0, sizeof(ubyte) *
-//			(imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight+2)*2)) );
+	//	memset(padimg, 0, sizeof(ubyte) *
+	//			(imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight+2)*2)) );
 
 	//padimg -> image
 	for(y = 0; y< bmpInfoHeader.biHeight +2; y++){
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 				for(int i = -1; i < 2; i++) {
 					for(int j = -1; j < 2; j++) {
 						sum += kernel[i+1][j+1]*padimg[(x+i*elemSize)+(y+j)*padsize+z];
-	
+
 					}
 				}
 				outimg[x-elemSize+(y-1)*size+z] = clip(sum,0,255);
@@ -136,6 +136,9 @@ int main(int argc, char** argv)
 	/***** write bmp *****/ 
 	if((fp=fopen(argv[2], "wb"))==NULL) { 
 		fprintf(stderr, "Error : Failed to open file...₩n"); 
+		free(inimg); 
+		free(padimg);
+		free(outimg);
 		return -1;
 	}
 
@@ -153,5 +156,6 @@ int main(int argc, char** argv)
 	free(inimg); 
 	free(padimg);
 	free(outimg);
+
 	return 0;
 }
