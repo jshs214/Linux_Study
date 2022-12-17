@@ -4,8 +4,6 @@
 
 #include "bmpHeader.h"
 
-#define RGB 3
-
 int main(int argc, char** argv)
 {
 	FILE *fp, *after;
@@ -16,7 +14,7 @@ int main(int argc, char** argv)
 	char input[100], output[100];
 
 	unsigned char *inimg, *outimg;
-	int row, height, imagesize;
+	int row, height, imagesize, elemSize;
 
 	strcpy(input, argv[1]);
 	strcpy(output, argv[2]);
@@ -35,12 +33,13 @@ int main(int argc, char** argv)
 	fread(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, fp);
 	fread(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
 
-	row = bmpInfoHeader.biWidth * RGB;
+	elemSize = bmpInfoHeader.biBitCount / 8;
+	row = bmpInfoHeader.biWidth * elemSize;
 	height = bmpInfoHeader.biHeight;
 	imagesize = row * height;
 
 	palrgb = malloc(sizeof(RGBQUAD) * 256);
-	
+
 	/* Use palete 256 */
 	for(int i = 0; i< 256; i++){
 		(palrgb+i)->rgbBlue = i;	
@@ -51,7 +50,7 @@ int main(int argc, char** argv)
 
 	inimg = malloc(sizeof(unsigned char)*imagesize);
 	outimg = malloc(sizeof(unsigned char)*imagesize);
-	
+
 	fread(inimg, sizeof(unsigned char) *imagesize, 1, fp);
 	printf("fread : %ld\n", sizeof(unsigned char)*imagesize );
 
@@ -64,34 +63,32 @@ int main(int argc, char** argv)
 	//2 Dimensional Array to pointer
 	//for(int j = 0; j<height; j++){
 	//	for(int i = 0; i<row; i++){
-	//		*(outimg+(i*RGB+(j*row))) = *(inimg+(i*RGB+(j*row)));
-	//		*(outimg+(i*RGB+(j*row+1))) = *(inimg+(i*RGB+(j*row+1)));
-	//		*(outimg+(i*RGB+(j*row+2))) = *(inimg+(i*RGB+(j*row+2)));
+	//		*(outimg+(i*elemSize+(j*row))) = *(inimg+(i*elemSize+(j*row)));
+	//		*(outimg+(i*elemSize+(j*row+1))) = *(inimg+(i*elemSize+(j*row+1)));
+	//		*(outimg+(i*elemSize+(j*row+2))) = *(inimg+(i*elemSize+(j*row+2)));
 	//	}
 	//}
 
 	// 1 Dimensional Array to pointer
-	for(int i = 0; i < imagesize; i+= RGB){
+	for(int i = 0; i < imagesize; i++){
 		*(outimg+i) = *(inimg+i);
-		*(outimg+i+1) = *(inimg+i+1);
-		*(outimg+i+2) = *(inimg+i+2);
-	printf("%d %d %d\n", outimg[i], outimg[i+1], outimg[i+2]);
 	}
-	
+
 	bmpHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
-					sizeof(RGBQUAD) * 256;
-	
+		sizeof(RGBQUAD) * 256;
+
 	fwrite(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, after );
 	fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER) , 1 , after );
 	fwrite(palrgb, sizeof(RGBQUAD), 256, after);
-	
+
 	fwrite(outimg, sizeof(unsigned char) * imagesize ,1, after);
 
 	fclose(after);
-	
+
 	free(inimg);
 	free(outimg);
-	
+
+
 
 	return 0;
 }

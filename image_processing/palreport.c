@@ -3,8 +3,8 @@
 #include <string.h>
 
 #include "bmpHeader.h"
+#include <time.h>
 
-#define RGB 3
 
 int main(int argc, char** argv)
 {
@@ -12,11 +12,14 @@ int main(int argc, char** argv)
 	BITMAPFILEHEADER bmpHeader;
 	BITMAPINFOHEADER bmpInfoHeader;
 	RGBQUAD palrgb[256];
+	clock_t start, end;
+    double result;
+
 
 	char input[100], output[100];
 
 	unsigned char *inimg, *outimg;
-	int row, height, imagesize;
+	int row, height, imagesize,elemSize;
 
 	strcpy(input, argv[1]);
 	strcpy(output, argv[2]);
@@ -34,10 +37,13 @@ int main(int argc, char** argv)
 	fread(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, fp);
 	fread(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
 
-	row = bmpInfoHeader.biWidth * RGB;
+	elemSize= bmpInfoHeader.biBitCount /8;
+	row = bmpInfoHeader.biWidth * elemSize;
 	height = bmpInfoHeader.biHeight;
 	imagesize = row * height;
 	
+	 start = clock(); // 수행 시간 측정 시작
+
 	/* Use palete 256 */
 	for(int i = 0; i< 256; i++){
 		palrgb[i].rgbBlue = i;	
@@ -58,20 +64,19 @@ int main(int argc, char** argv)
 	printf("image size : %d\n", imagesize);
 
 	//2 Dimensional Array
-	//for(int j = 0; j<height; j++){
-	//	for(int i = 0; i<row; i++){
-	//		outimg[i*RGB+(j*row)] = inimg[i*RGB+(j*row)];
-	//		outimg[i*RGB+(j*row+1)] = inimg[i*RGB+(j*row+1)];
-	//		outimg[i*RGB+(j*row+2)] = inimg[i*RGB+(j*row+2)];
-	//	}
-	//}
+//	for(int j = 0; j<height; j++){
+//		for(int i = 0; i<row; i++){
+//			outimg[i*RGB+(j*row)] = inimg[i*RGB+(j*row)];
+//			outimg[i*RGB+(j*row+1)] = inimg[i*RGB+(j*row+1)];
+//			outimg[i*RGB+(j*row+2)] = inimg[i*RGB+(j*row+2)];
+//		}
+//	}
 
 	// 1 Dimensional Array
-	for(int i = 0; i < imagesize; i+= RGB){
+	for(int i = 0; i < imagesize; i+= elemSize){
 		outimg[i] = inimg[i];
 		outimg[i+1] = inimg[i+1];
 		outimg[i+2] = inimg[i+2];
-		//printf("%d %d %d\n", outimg[i], outimg[i+1], outimg[i+2]);
 	}
 	
 	bmpHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
@@ -87,6 +92,13 @@ int main(int argc, char** argv)
 	
 	free(inimg);
 	free(outimg);
+
+	end = clock(); //시간 측정 끝
+    result = (double)(end - start);
+
+    // 결과 출력
+    printf("%f", result / CLOCKS_PER_SEC);
+
 
 	return 0;
 }
