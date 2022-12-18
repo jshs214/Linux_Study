@@ -64,20 +64,20 @@ int main(int argc, char** argv)
 	printf("image size : %d\n", imagesize);
 
 	//2 Dimensional Array
-//	for(int j = 0; j<height; j++){
-//		for(int i = 0; i<row; i++){
-//			outimg[i*RGB+(j*row)] = inimg[i*RGB+(j*row)];
-//			outimg[i*RGB+(j*row+1)] = inimg[i*RGB+(j*row+1)];
-//			outimg[i*RGB+(j*row+2)] = inimg[i*RGB+(j*row+2)];
-//		}
-//	}
+	for(int j = 0; j<height; j++){
+		for(int i = 0; i<row; i++){
+			outimg[i*elemSize+(j*row)] = inimg[i*elemSize+(j*row)];
+			outimg[i*elemSize+(j*row+1)] = inimg[i*elemSize+(j*row+1)];
+			outimg[i*elemSize+(j*row+2)] = inimg[i*elemSize+(j*row+2)];
+		}
+	}
 
 	// 1 Dimensional Array
-	for(int i = 0; i < imagesize; i+= elemSize){
-		outimg[i] = inimg[i];
-		outimg[i+1] = inimg[i+1];
-		outimg[i+2] = inimg[i+2];
-	}
+//	for(int i = 0; i < imagesize; i+= elemSize){
+//		outimg[i] = inimg[i];
+//		outimg[i+1] = inimg[i+1];
+//		outimg[i+2] = inimg[i+2];
+//	}
 	
 	bmpHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
 					sizeof(RGBQUAD) * 256;
