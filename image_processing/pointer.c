@@ -61,18 +61,18 @@ int main(int argc, char** argv)
 	printf("image size : %d\n", imagesize);
 
 	//2 Dimensional Array to pointer
-	//for(int j = 0; j<height; j++){
-	//	for(int i = 0; i<row; i++){
-	//		*(outimg+(i*elemSize+(j*row))) = *(inimg+(i*elemSize+(j*row)));
-	//		*(outimg+(i*elemSize+(j*row+1))) = *(inimg+(i*elemSize+(j*row+1)));
-	//		*(outimg+(i*elemSize+(j*row+2))) = *(inimg+(i*elemSize+(j*row+2)));
-	//	}
-	//}
+	for(int j = 0; j<height; j++){
+		for(int i = 0; i<row; i+= elemSize){
+			*(outimg+(i*elemSize+(j*row))) = *(inimg+(i*elemSize+(j*row)));
+			*(outimg+(i*elemSize+(j*row+1))) = *(inimg+(i*elemSize+(j*row+1)));
+			*(outimg+(i*elemSize+(j*row+2))) = *(inimg+(i*elemSize+(j*row+2)));
+		}
+	}
 
 	// 1 Dimensional Array to pointer
-	for(int i = 0; i < imagesize; i++){
-		*(outimg+i) = *(inimg+i);
-	}
+//	for(int i = 0; i < imagesize; i++){
+//		*(outimg+i) = *(inimg+i);
+//	}
 
 	bmpHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
 		sizeof(RGBQUAD) * 256;

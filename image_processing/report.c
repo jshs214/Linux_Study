@@ -32,11 +32,20 @@ int main(int argc, char** argv)
 
 	fread(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, fp);
 	fread(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
-	
+
 	elemSize = bmpInfoHeader.biBitCount / 8;
 	row = bmpInfoHeader.biWidth * elemSize;
 	height = bmpInfoHeader.biHeight;
 	imagesize = row * height;
+
+	palrgb = malloc(sizeof(RGBQUAD) * 256);
+
+	/* Use palete 256 */
+	for(int i = 0; i< 256; i++){
+		(palrgb+i)->rgbBlue = i;	
+		(palrgb+i)->rgbGreen = i;	
+		(palrgb+i)->rgbRed = i;	
+	}
 
 	inimg = malloc(sizeof(unsigned char)*imagesize);
 	outimg = malloc(sizeof(unsigned char)*imagesize);
@@ -53,22 +62,15 @@ int main(int argc, char** argv)
 
 	//2 Dimensional Array
 	for(int j = 0; j<height; j++){
-		for(int i = 0; i<row; i++){
+		for(int i = 0; i<row; i+= elemSize){
 			outimg[i*elemSize+(j*row)] = inimg[i*elemSize+(j*row)];
 			outimg[i*elemSize+(j*row+1)] = inimg[i*elemSize+(j*row+1)];
 			outimg[i*elemSize+(j*row+2)] = inimg[i*elemSize+(j*row+2)];
 		}
 	}
 
-	// 1 Dimensional Array
-	for(int i = 0; i < imagesize; i+= elemSize){
-		outimg[i] = inimg[i];
-		outimg[i+1] = inimg[i+1];
-		outimg[i+2] = inimg[i+2];
-		printf("pixel data : B, %d G, %d R, %d\n", outimg[i], outimg[i+1], outimg[i+2]);
-	}
-	
-	
+
+
 	fwrite(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, after );
 	fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1 , after );
 	fwrite(outimg, sizeof(unsigned char) * imagesize ,1, after);

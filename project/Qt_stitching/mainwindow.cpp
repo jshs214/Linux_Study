@@ -93,6 +93,8 @@ void MainWindow::on_pushButton_clicked()
 
 	imwrite("Stitching_Image.jpg", pano);	
 	waitKey(0);
-
+	//ui->label->setPixmap(QPixmap("./Stitching_Image.jpg").scaled(256, 256));
+	ui->label->setPixmap(QPixmap("./Stitching_Image.jpg"));
+    	ui->label->show();
 }
 
