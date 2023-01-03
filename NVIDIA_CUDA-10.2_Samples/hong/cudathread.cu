@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #define NUM_BLOCKS 2
-#define NUM_THREAD 5
+#define NUM_THREAD 66
 
 __global__ void kernel()
 {
