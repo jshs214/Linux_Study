@@ -14,12 +14,11 @@ typedef unsigned char ubyte;
 __global__ void convertToBlur(ubyte *rgb, ubyte *out, int width, int height, int elemSize) {
 		int x = threadIdx.x + blockIdx.x * blockDim.x;
 		int y = threadIdx.y + blockIdx.y * blockDim.y;
-		//int z = threadIdx.z + blockIdx.z * blockDim.z;
 
 		int size = width*elemSize;
 		int rgb_offset = (x*elemSize+(y*size));
 
-		int arr[9]={0,};
+		unsigned char arr[9]={0,};
 		float blur[3][3] = { {1/9.0, 1/9.0, 1/9.0,},
 				{1/9.0, 1/9.0, 1/9.0},
 				{1/9.0, 1/9.0, 1/9.0} };
@@ -172,8 +171,6 @@ __global__ void convertToBlur(ubyte *rgb, ubyte *out, int width, int height, int
 				//define block and grid dimensions
 				const dim3 dimGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/16));
 				const dim3 dimBlock(32, 16);
-				//const dim3 dimGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/16),1);
-				//const dim3 dimBlock(32, 16,elemSize);
 
 				//execute cuda kernel
 				convertToBlur<<<dimGrid, dimBlock>>>(d_inimg, d_outimg, bmpInfoHeader.biHeight, bmpInfoHeader.biWidth, elemSize);
