@@ -11,32 +11,159 @@
 typedef unsigned char ubyte;
 //Cuda kernel for converting RGB image into a GreyScale image
 
-__global__ void convertToBlur(ubyte *rgb, ubyte *out, int rows, int cols, int elemSize) {
-	int col = threadIdx.x + blockIdx.x * blockDim.x;
-	int row = threadIdx.y + blockIdx.y * blockDim.y;
+__global__ void convertToBlur(ubyte *rgb, ubyte *out, int width, int height, int elemSize) {
+	int x = threadIdx.x + blockIdx.x * blockDim.x;
+	int y = threadIdx.y + blockIdx.y * blockDim.y;
 
+	int size = width*elemSize;
+	int rgb_offset = (x*elemSize+(y*size));
+
+	int arr[9]={0,};
 	float blur[3][3] = { {1/9.0, 1/9.0, 1/9.0,},
 		{1/9.0, 1/9.0, 1/9.0},
 		{1/9.0, 1/9.0, 1/9.0} };
-	// Compute for only those threads which map directly to image grid
-	if (col < cols && row < rows) {
-		int rgb_offset = (row * cols + col) * elemSize;
 
-		float rsum, gsum , bsum;
-		rsum = gsum = bsum = 0.0;
-		for(int i = -1; i < 2; i++) {
-			for(int j = -1; j < 2; j++) {
-				rsum += blur[i+1][j+1]* rgb[ ((col+i) + (row+j) * cols) * elemSize +2];
-				gsum += blur[i+1][j+1]* rgb[ ((col+i) + (row+j) * cols) * elemSize +1];
-				bsum += blur[i+1][j+1]* rgb[ ((col+i) + (row+j) * cols) * elemSize +0];
+	/*
+	// Compute for only those threads which map directly to image grid
+	if (x < width && y < height) {
+	//int rgb_offset = (y * height + x) * elemSize;
+	//int rgb_offset = (x*elemSize+(y*size));
+	float rsum, gsum , bsum;
+	rsum = gsum = bsum = 0.0;
+	for(int i = -1; i < 2; i++) {
+	for(int j = -1; j < 2; j++) {
+	bsum += blur[i+1][j+1]* rgb[ ((x+i) + (y+j) * height) * elemSize +0];
+	gsum += blur[i+1][j+1]* rgb[ ((x+i) + (y+j) * height) * elemSize +1];
+	rsum += blur[i+1][j+1]* rgb[ ((x+i) + (y+j) * height) * elemSize +2];
+	}
+	}
+	out[rgb_offset +0] = LIMIT_UBYTE(bsum);
+	out[rgb_offset +1] = LIMIT_UBYTE(gsum);
+	out[rgb_offset +2] = LIMIT_UBYTE(rsum);
+	}
+	 */
+	for(int z = 0; z<elemSize; z++){
+		//LeftSide
+		if(x ==0){
+			//LeftTopVertex
+			if(y==0){
+				arr[0] = arr[1] = arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+				arr[2] = arr[5] = rgb[(x*elemSize)+elemSize +(y*size)+z];
+				arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+				arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];	
+			}
+			//LeftDownVertex
+			else if(y==height-1){
+				arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+				arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+				arr[3] = arr[6] = arr[7] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+				arr[8] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+			}
+
+			//LeftSide
+			else{
+				arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+				arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+				arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+				arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+				arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+				arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
+			}
+
+			int cnt=0;
+			float sum = 0.0;
+			for(int i = -1; i < 2; i++) {
+				for(int j = -1; j < 2; j++) {
+					sum += blur[i+1][j+1]*arr[cnt++];
+				}
+			}
+			out[rgb_offset+z] = LIMIT_UBYTE(sum);
+		}
+		//RightSide
+		else if(x==width-1){
+			//RightTopVertex
+			if(y==0){
+				arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				arr[1] = arr[2] = arr[5] = arr[4] = rgb[rgb_offset+z];
+				arr[6] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+				arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
+			}
+			//RightDownVertex
+			else if(y==height-1){
+				arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+				arr[1] = arr[2] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+				arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				arr[4] = arr[5] = arr[7] = arr[8] = rgb[rgb_offset+z];
+			}
+			//RightSide
+			else{
+				arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+				arr[1] = arr[2] = rgb[(x*elemSize)+((y-1)*size)+z];
+				arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				arr[4] = arr[5] = rgb[(x*elemSize)+(y*size)+z];
+				arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
+				arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
+			}
+			int cnt=0;
+			float sum = 0.0;
+			for(int i = -1; i < 2; i++) {
+				for(int j = -1; j < 2; j++) {
+					sum += blur[i+1][j+1]*arr[cnt++];
+				}
+			}
+			out[rgb_offset+z] = LIMIT_UBYTE(sum);
+		}
+		//TopSide
+		else if( y==0){
+			if(x!=0 && x!=width-1){
+				arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				arr[1] = arr[4] = rgb[rgb_offset+z];
+				arr[2] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+				arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
+				arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+				arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
+
+				int cnt=0;
+				float sum = 0.0;
+				for(int i = -1; i < 2; i++) {
+					for(int j = -1; j < 2; j++) {
+						sum += blur[i+1][j+1]*arr[cnt++];
+					}
+				}
+				out[rgb_offset+z] = LIMIT_UBYTE(sum);
 			}
 		}
-		
-		out[rgb_offset +2] = LIMIT_UBYTE(rsum);
-		out[rgb_offset +1] = LIMIT_UBYTE(gsum);
-		out[rgb_offset +0] = LIMIT_UBYTE(bsum);
-	}
-
+		//BottomSide
+		else if( y==height-1){
+			if(x!=0 && x!=width-1){
+				arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+				arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+				arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+				arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				arr[4] = arr[7] = rgb[rgb_offset+z];
+				arr[5] = arr[8] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+				int cnt=0;
+				float sum = 0.0;
+				for(int i = -1; i < 2; i++) {
+					for(int j = -1; j < 2; j++) {
+						sum += blur[i+1][j+1]*arr[cnt++];
+					}
+				}
+				out[rgb_offset+z] = LIMIT_UBYTE(sum);
+			}
+		}	
+		// inSide
+		//if (x < width && y < height) {
+		else{
+			float sum = 0.0;
+			for(int i = -1; i < 2; i++) {
+				for(int j = -1; j < 2; j++) {
+					sum += blur[i+1][j+1]*rgb[((x+i)+(y+j)*height)*elemSize+z];
+				}
+			}
+			out[rgb_offset +z] = LIMIT_UBYTE(sum);
+		}
+	}//z for
 }
 
 int main(int argc, char** argv)
@@ -45,7 +172,7 @@ int main(int argc, char** argv)
 	BITMAPFILEHEADER bmpHeader; /* BMP FILE INFO */
 	BITMAPINFOHEADER bmpInfoHeader; /* BMP IMAGE INFO */
 	//RGBQUAD *palrgb;
-	ubyte *inimg, *outimg, *padimg;
+	ubyte *inimg, *outimg;
 	if(argc != 3) {
 		fprintf(stderr, "usage : %s input.bmp output.bmp\n", argv[0]);
 		return -1;
@@ -70,22 +197,14 @@ int main(int argc, char** argv)
 	int stride = bmpInfoHeader.biWidth * elemSize;
 	//widthbytes(bits) (((bits)+31)/32*4)
 	int imageSize = stride * bmpInfoHeader.biHeight;
-	int padRow = (bmpInfoHeader.biWidth+2) * elemSize;
-	int padSize = (imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight +2) * 2 * elemSize));
 
-	/* 이미지의 해상도(넓이 × 깊이) */
-	printf("Resolution : %d x %d\n", bmpInfoHeader.biWidth, bmpInfoHeader.biHeight);
-	printf("Bit Count : %d(%d:%d)\n", bmpInfoHeader.biBitCount, elemSize, stride);
-
-	printf("Image Size : %d\n", imageSize);
 	inimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
 	outimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
-	padimg = (ubyte*)malloc(sizeof(ubyte)*(imageSize + ((bmpInfoHeader.biWidth + bmpInfoHeader.biHeight +2) * 2 * elemSize)) );
 
 	fread(inimg, sizeof(ubyte), imageSize, fp);
 	fclose(fp);
 
-	ubyte *d_inimg = NULL, *d_outimg = NULL, *d_padimg = NULL;
+	ubyte *d_inimg = NULL, *d_outimg = NULL;
 	//allocate and initialize memory on device
 	cudaMalloc(&d_inimg, sizeof(ubyte) * imageSize);
 	cudaMalloc(&d_outimg, sizeof(ubyte) * imageSize);
@@ -134,5 +253,7 @@ int main(int argc, char** argv)
 	fclose(fp);
 	free(inimg);
 	free(outimg);
+
+	printf("Success blur\n");
 	return 0;
 }
