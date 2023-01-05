@@ -150,7 +150,7 @@ __global__ void convertToSobel(ubyte *gray, ubyte *out, int height, int width, i
 				BITMAPFILEHEADER bmpHeader; /* BMP FILE INFO */
 				BITMAPINFOHEADER bmpInfoHeader; /* BMP IMAGE INFO */
 				//RGBQUAD *palrgb;
-				ubyte *inimg, *outimg, *grayimg;
+				ubyte *inimg, *outimg;
 				if(argc != 3) {
 						fprintf(stderr, "usage : %s input.bmp output.bmp\n", argv[0]);
 						return -1;
@@ -177,7 +177,6 @@ __global__ void convertToSobel(ubyte *gray, ubyte *out, int height, int width, i
 
 				inimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
 				outimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
-				grayimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
 
 				fread(inimg, sizeof(ubyte), imageSize, fp);
 				fclose(fp);
@@ -197,8 +196,6 @@ __global__ void convertToSobel(ubyte *gray, ubyte *out, int height, int width, i
 				const dim3 dimGrayGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/16));
 				const dim3 dimGrayBlock(32, 16);
 				convertToGray<<<dimGrayGrid, dimGrayBlock>>>(d_inimg, d_grayimg, bmpInfoHeader.biHeight, bmpInfoHeader.biWidth, elemSize);
-
-				cudaMemcpy(grayimg, d_grayimg, sizeof(ubyte) * imageSize, cudaMemcpyDeviceToHost);
 
 				//define block and grid dimensions
 				const dim3 dimGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/4),1);
@@ -237,7 +234,6 @@ __global__ void convertToSobel(ubyte *gray, ubyte *out, int height, int width, i
 				fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
 				//fwrite(palrgb, sizeof(RGBQUAD), 256, fp);
 				fwrite(outimg, sizeof(ubyte), imageSize, fp);
-				//fwrite(grayimg, sizeof(ubyte), imageSize, fp);
 
 				fclose(fp);
 				free(inimg);
