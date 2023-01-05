@@ -10,26 +10,27 @@
 #define widthbytes(bits) (((bits)+31)/32*4)
 typedef unsigned char ubyte;
 
-__global__ void convertToGray(ubyte *in, ubyte *gray, int height, int width, int elemSize){
+__global__ void convertToGray(ubyte *rgb, ubyte *gray, int height, int width, int elemSize) {
 		int x = threadIdx.x + blockIdx.x * blockDim.x;
 		int y = threadIdx.y + blockIdx.y * blockDim.y;
+		int size = width*elemSize;
+		int offset = x*elemSize+(y*size);
 		
-		int gray_offset = x+y*width;
-		int rgb_offset = gray_offset * elemSize;
-		ubyte r = in[rgb_offset + 2];
-		ubyte g = in[rgb_offset + 1];
-		ubyte b = in[rgb_offset + 0];
-		gray[gray_offset] = r * 0.299f + g * 0.587f + b * 0.114f;
+		if( x < width && y < height){
+		ubyte r = rgb[offset + 2];
+		ubyte g = rgb[offset + 1];
+		ubyte b = rgb[offset + 0];
+		gray[offset] = gray[offset+1] = gray[offset+2] = r * 0.299f + g * 0.587f + b * 0.114f;
+		}
 }
 
-//Cuda kernel for converting RGB image into a GreyScale image
-__global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, int elemSize) {
+__global__ void convertToSobel(ubyte *gray, ubyte *out, int height, int width, int elemSize) {
 		int x = threadIdx.x + blockIdx.x * blockDim.x;
 		int y = threadIdx.y + blockIdx.y * blockDim.y;
 		int z = threadIdx.z + blockIdx.z * blockDim.z;
 
 		int size = width*elemSize;
-		int rgb_offset = (x*elemSize+(y*size));
+		int offset = (x*elemSize+(y*size));
 
 		unsigned char arr[9]={0,};
 		// define the xfirter, yfilter
@@ -45,40 +46,39 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 
 		// inSide
 		if ( (x > 0 && x < width-1) && (y >0 && y < height-1) ) {
-				//else{
 				for(int i = -1; i < 2; i++) {
 						for(int j = -1; j < 2; j++) {
-								vEdge += xfilter[i+1][j+1]*rgb[((x+i)+(y+j)*height)*elemSize+z];
-								hEdge += yfilter[i+1][j+1]*rgb[((x+i)+(y+j)*height)*elemSize+z];
+								vEdge += xfilter[i+1][j+1]*gray[((x+i)+(y+j)*height)*elemSize+z];
+								hEdge += yfilter[i+1][j+1]*gray[((x+i)+(y+j)*height)*elemSize+z];
 						}
 				}
 				sum = sqrt(hEdge*hEdge+vEdge*vEdge);
-				out[rgb_offset +z] = LIMIT_UBYTE(sum);
+				out[offset+z] = LIMIT_UBYTE(sum);
 		}
 		//LeftSide
 		else if(x ==0){
 				//LeftTopVertex
 				if(y==0){
-						arr[0] = arr[1] = arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[2] = arr[5] = rgb[(x*elemSize)+elemSize +(y*size)+z];
-						arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];	
+						arr[0] = arr[1] = arr[3] = arr[4] = gray[(x*elemSize)+(y*size)+z];
+						arr[2] = arr[5] = gray[(x*elemSize)+elemSize +(y*size)+z];
+						arr[6] = arr[7] = gray[(x*elemSize)+((y+1)*size)+z];
+						arr[8] = gray[(x*elemSize)+elemSize+((y+1)*size)+z];	
 				}
 				//LeftDownVertex
 				else if(y==height-1){
-						arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = arr[7] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[8] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+						arr[0] = arr[1] = gray[(x*elemSize)+((y-1)*size)+z];
+						arr[2] = gray[(x*elemSize)+elemSize+((y-1)*size)+z];
+						arr[3] = arr[6] = arr[7] = arr[4] = gray[(x*elemSize)+(y*size)+z];
+						arr[8] = arr[5] = gray[(x*elemSize)+elemSize+(y*size)+z];
 				}
 				//LeftSide
 				else{
-						arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
-						arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
+						arr[0] = arr[1] = gray[(x*elemSize)+((y-1)*size)+z];
+						arr[2] = gray[(x*elemSize)+elemSize+((y-1)*size)+z];
+						arr[3] = arr[4] = gray[(x*elemSize)+(y*size)+z];
+						arr[5] = gray[(x*elemSize)+elemSize+(y*size)+z];
+						arr[6] = arr[7] = gray[(x*elemSize)+((y+1)*size)+z];
+						arr[8] = gray[(x*elemSize)+elemSize+((y+1)*size)+z];
 				}
 
 		}
@@ -86,49 +86,48 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 		else if(x==width-1){
 				//RightTopVertex
 				if(y==0){
-						arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[1] = arr[2] = arr[5] = arr[4] = rgb[rgb_offset+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
+						arr[0] = arr[3] = gray[(x*elemSize)-elemSize+(y*size)+z];
+						arr[1] = arr[2] = arr[5] = arr[4] = gray[offset+z];
+						arr[6] = gray[(x*elemSize)-elemSize+((y-1)*size)+z];
+						arr[7] = arr[8] = gray[(x*elemSize)+((y+1)*size)+z];
 				}
 				//RightDownVertex
 				else if(y==height-1){
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = arr[2] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[5] = arr[7] = arr[8] = rgb[rgb_offset+z];
+						arr[0] = gray[(x*elemSize)-elemSize+((y-1)*size)+z];
+						arr[1] = arr[2] = gray[(x*elemSize)-elemSize+((y-1)*size)+z];
+						arr[3] = arr[6] = gray[(x*elemSize)-elemSize+(y*size)+z];
+						arr[4] = arr[5] = arr[7] = arr[8] = gray[offset+z];
 				}
 				//RightSide
 				else{
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = arr[2] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[5] = rgb[(x*elemSize)+(y*size)+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
-						arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
+						arr[0] = gray[(x*elemSize)-elemSize+((y-1)*size)+z];
+						arr[1] = arr[2] = gray[(x*elemSize)+((y-1)*size)+z];
+						arr[3] = gray[(x*elemSize)-elemSize+(y*size)+z];
+						arr[4] = arr[5] = gray[(x*elemSize)+(y*size)+z];
+						arr[6] = gray[(x*elemSize)-elemSize+((y+1)*size)+z];
+						arr[7] = arr[8] = gray[(x*elemSize)+((y+1)*size)+z];
 				}
 		}
 		//TopSide
 		else if( y==0){
 				if(x!=0 && x!=width-1){
-						arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[1] = arr[4] = rgb[rgb_offset+z];
-						arr[2] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
-						arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
-
+						arr[0] = arr[3] = gray[(x*elemSize)-elemSize+(y*size)+z];
+						arr[1] = arr[4] = gray[offset+z];
+						arr[2] = arr[5] = gray[(x*elemSize)+elemSize+(y*size)+z];
+						arr[6] = gray[(x*elemSize)-elemSize+((y+1)*size)+z];
+						arr[7] = gray[(x*elemSize)+((y+1)*size)+z];
+						arr[8] = gray[(x*elemSize)+elemSize+((y+1)*size)+z];
 				}
 		}
 		//BottomSide
 		else if( y==height-1){
 				if(x!=0 && x!=width-1){
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[7] = rgb[rgb_offset+z];
-						arr[5] = arr[8] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+						arr[0] = gray[(x*elemSize)-elemSize+((y-1)*size)+z];
+						arr[1] = gray[(x*elemSize)+((y-1)*size)+z];
+						arr[2] = gray[(x*elemSize)+elemSize+((y-1)*size)+z];
+						arr[3] = arr[6] = gray[(x*elemSize)-elemSize+(y*size)+z];
+						arr[4] = arr[7] = gray[offset+z];
+						arr[5] = arr[8] = gray[(x*elemSize)-elemSize+(y*size)+z];
 				}
 		}	
 
@@ -136,13 +135,14 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 
 		for(int i = -1; i < 2; i++) {
 				for(int j = -1; j < 2; j++) {
-						vEdge += xfilter[i+1][j+1]*arr[cnt++];
+						vEdge += xfilter[i+1][j+1]*arr[cnt];
 						hEdge += yfilter[i+1][j+1]*arr[cnt++];
 				}
 		}
 		sum=sqrt(hEdge*hEdge+vEdge*vEdge);
-		out[rgb_offset+z] = LIMIT_UBYTE(sum);
-		}
+		out[offset+z] = LIMIT_UBYTE(sum);
+}
+
 
 		int main(int argc, char** argv)
 		{
@@ -173,7 +173,6 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 
 				int elemSize = bmpInfoHeader.biBitCount/8.;
 				int stride = bmpInfoHeader.biWidth * elemSize;
-				//widthbytes(bits) (((bits)+31)/32*4)
 				int imageSize = stride * bmpInfoHeader.biHeight;
 
 				inimg = (ubyte*)malloc(sizeof(ubyte)*imageSize);
@@ -183,34 +182,32 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 				fread(inimg, sizeof(ubyte), imageSize, fp);
 				fclose(fp);
 
-				//allocate and initialize memory on device
 				ubyte *d_inimg = NULL, *d_outimg = NULL;
 				ubyte *d_grayimg = NULL;
-
+				//allocate and initialize memory on device
 				cudaMalloc(&d_inimg, sizeof(ubyte) * imageSize);
 				cudaMalloc(&d_outimg, sizeof(ubyte) * imageSize);
-				cudaMalloc(&d_grayimg, sizeof(ubyte) * imageSize);
-
 				cudaMemset(d_outimg, 0, sizeof(ubyte) * imageSize);
 				//copy host rgb data array to device rgb data array
 				cudaMemcpy(d_inimg, inimg, sizeof(ubyte) * imageSize, cudaMemcpyHostToDevice);
 
-				//define block and grid dimensions
-				cudaMemcpy(d_grayimg, grayimg, sizeof(ubyte) * imageSize, cudaMemcpyHostToDevice);
-				const dim3 dimGrayGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/16) );
+				
+				cudaMalloc(&d_grayimg, sizeof(ubyte)*imageSize);
+				cudaMemset(d_grayimg, 0, sizeof(ubyte) * imageSize);
+				const dim3 dimGrayGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/16));
 				const dim3 dimGrayBlock(32, 16);
 				convertToGray<<<dimGrayGrid, dimGrayBlock>>>(d_inimg, d_grayimg, bmpInfoHeader.biHeight, bmpInfoHeader.biWidth, elemSize);
+
 				cudaMemcpy(grayimg, d_grayimg, sizeof(ubyte) * imageSize, cudaMemcpyDeviceToHost);
 
-
+				//define block and grid dimensions
 				const dim3 dimGrid((int)ceil((bmpInfoHeader.biWidth/32)), (int)ceil((bmpInfoHeader.biHeight)/4),1);
 				const dim3 dimBlock(32, 4, elemSize);
-
 				//execute cuda kernel
-				convertToSobel<<<dimGrid, dimBlock>>>(d_inimg, d_outimg, bmpInfoHeader.biHeight, bmpInfoHeader.biWidth, elemSize);
+				convertToSobel<<<dimGrid, dimBlock>>>(d_grayimg, d_outimg, bmpInfoHeader.biHeight, bmpInfoHeader.biWidth, elemSize);
 				//copy computed gray data array from device to host
 				cudaMemcpy(outimg, d_outimg, sizeof(ubyte) * imageSize, cudaMemcpyDeviceToHost);
-				
+
 				cudaFree(d_grayimg);
 				cudaFree(d_outimg);
 				cudaFree(d_inimg);
@@ -239,12 +236,10 @@ __global__ void convertToSobel(ubyte *rgb, ubyte *out, int height, int width, in
 				/* BITMAPINFOHEADER 구조체의 데이터 */
 				fwrite(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
 				//fwrite(palrgb, sizeof(RGBQUAD), 256, fp);
-				//fwrite(inimg, sizeof(ubyte), imageSize, fp);
-				//fwrite(outimg, sizeof(ubyte), imageSize, fp);
-				fwrite(grayimg, sizeof(ubyte), imageSize, fp);
+				fwrite(outimg, sizeof(ubyte), imageSize, fp);
+				//fwrite(grayimg, sizeof(ubyte), imageSize, fp);
 
 				fclose(fp);
-				free(grayimg);
 				free(inimg);
 				free(outimg);
 
