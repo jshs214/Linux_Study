@@ -12,130 +12,130 @@ typedef unsigned char ubyte;
 //Cuda kernel for converting RGB image into a GreyScale image
 
 __global__ void convertToBlur(ubyte *rgb, ubyte *out, int width, int height, int elemSize) {
-		int x = threadIdx.x + blockIdx.x * blockDim.x;
-		int y = threadIdx.y + blockIdx.y * blockDim.y;
-		int z = threadIdx.z + blockIdx.z * blockDim.z;
+	int x = threadIdx.x + blockIdx.x * blockDim.x;
+	int y = threadIdx.y + blockIdx.y * blockDim.y;
+	int z = threadIdx.z + blockIdx.z * blockDim.z;
 
-		int size = width*elemSize;
-		int rgb_offset = (x*elemSize+(y*size));
+	int size = width*elemSize;
+	int rgb_offset = (x*elemSize+(y*size));
 
-		unsigned char arr[9]={0,};
-		float blur[3][3] = { {0, -1, 0,},
-				{-1, 5, -1},
-				{0, -1, 0} };
+	unsigned char arr[9]={0,};
+	float blur[3][3] = { {0, -1, 0,},
+		{-1, 5, -1},
+		{0, -1, 0} };
 
-		// inSide
-		float sum = 0.0;
-		if ( (x > 0 && x < width-1) && (y >0 && y < height-1) ) {
-				//else{
-				for(int i = -1; i < 2; i++) {
-						for(int j = -1; j < 2; j++) {
-								sum += blur[i+1][j+1]*rgb[((x+i)+(y+j)*height)*elemSize+z];
-						}
-				}
-				out[rgb_offset +z] = LIMIT_UBYTE(sum);
+	// inSide
+	float sum = 0.0;
+	if ( (x > 0 && x < width-1) && (y >0 && y < height-1) ) {
+		//else{
+		for(int i = -1; i < 2; i++) {
+			for(int j = -1; j < 2; j++) {
+				sum += blur[i+1][j+1]*rgb[((x+i)+(y+j)*height)*elemSize+z];
+			}
 		}
+		out[rgb_offset +z] = LIMIT_UBYTE(sum);
+	}
+	//LeftSide
+	else if(x ==0){
+		//LeftTopVertex
+		if(y==0){
+			arr[0] = arr[1] = arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+			arr[2] = arr[5] = rgb[(x*elemSize)+elemSize +(y*size)+z];
+			arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+			arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];	
+		}
+		//LeftDownVertex
+		else if(y==height-1){
+			arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+			arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+			arr[3] = arr[6] = arr[7] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+			arr[8] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+		}
+
 		//LeftSide
-		else if(x ==0){
-				//LeftTopVertex
-				if(y==0){
-						arr[0] = arr[1] = arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[2] = arr[5] = rgb[(x*elemSize)+elemSize +(y*size)+z];
-						arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];	
-				}
-				//LeftDownVertex
-				else if(y==height-1){
-						arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = arr[7] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[8] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
-				}
+		else{
+			arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+			arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+			arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
+			arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+			arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+			arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
+		}
 
-				//LeftSide
-				else{
-						arr[0] = arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[4] = rgb[(x*elemSize)+(y*size)+z];
-						arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
-						arr[6] = arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
-				}
-
+	}
+	//RightSide
+	else if(x==width-1){
+		//RightTopVertex
+		if(y==0){
+			arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+			arr[1] = arr[2] = arr[5] = arr[4] = rgb[rgb_offset+z];
+			arr[6] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+			arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
+		}
+		//RightDownVertex
+		else if(y==height-1){
+			arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+			arr[1] = arr[2] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+			arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+			arr[4] = arr[5] = arr[7] = arr[8] = rgb[rgb_offset+z];
 		}
 		//RightSide
-		else if(x==width-1){
-				//RightTopVertex
-				if(y==0){
-						arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[1] = arr[2] = arr[5] = arr[4] = rgb[rgb_offset+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
-				}
-				//RightDownVertex
-				else if(y==height-1){
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = arr[2] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[5] = arr[7] = arr[8] = rgb[rgb_offset+z];
-				}
-				//RightSide
-				else{
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = arr[2] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[5] = rgb[(x*elemSize)+(y*size)+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
-						arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
-				}
+		else{
+			arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+			arr[1] = arr[2] = rgb[(x*elemSize)+((y-1)*size)+z];
+			arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+			arr[4] = arr[5] = rgb[(x*elemSize)+(y*size)+z];
+			arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
+			arr[7] = arr[8] = rgb[(x*elemSize)+((y+1)*size)+z];
 		}
-		//TopSide
-		else if( y==0){
-				if(x!=0 && x!=width-1){
-						arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[1] = arr[4] = rgb[rgb_offset+z];
-						arr[2] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
-						arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
-						arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
-						arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
+	}
+	//TopSide
+	else if( y==0){
+		if(x!=0 && x!=width-1){
+			arr[0] = arr[3] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+			arr[1] = arr[4] = rgb[rgb_offset+z];
+			arr[2] = arr[5] = rgb[(x*elemSize)+elemSize+(y*size)+z];
+			arr[6] = rgb[(x*elemSize)-elemSize+((y+1)*size)+z];
+			arr[7] = rgb[(x*elemSize)+((y+1)*size)+z];
+			arr[8] = rgb[(x*elemSize)+elemSize+((y+1)*size)+z];
 
-				}
 		}
-		//BottomSide
-		else if( y==height-1){
-				if(x!=0 && x!=width-1){
-						arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
-						arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
-						arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
-						arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-						arr[4] = arr[7] = rgb[rgb_offset+z];
-						arr[5] = arr[8] = rgb[(x*elemSize)-elemSize+(y*size)+z];
-				}
-		}	
-		int cnt=0;
-		for(int i = -1; i < 2; i++) {
-				for(int j = -1; j < 2; j++) {
-						sum += blur[i+1][j+1]*arr[cnt++];
-				}
+	}
+	//BottomSide
+	else if( y==height-1){
+		if(x!=0 && x!=width-1){
+			arr[0] = rgb[(x*elemSize)-elemSize+((y-1)*size)+z];
+			arr[1] = rgb[(x*elemSize)+((y-1)*size)+z];
+			arr[2] = rgb[(x*elemSize)+elemSize+((y-1)*size)+z];
+			arr[3] = arr[6] = rgb[(x*elemSize)-elemSize+(y*size)+z];
+			arr[4] = arr[7] = rgb[rgb_offset+z];
+			arr[5] = arr[8] = rgb[(x*elemSize)-elemSize+(y*size)+z];
 		}
-		out[rgb_offset+z] = LIMIT_UBYTE(sum);
-}
+	}	
+	int cnt=0;
+	for(int i = -1; i < 2; i++) {
+		for(int j = -1; j < 2; j++) {
+			sum += blur[i+1][j+1]*arr[cnt++];
+		}
+	}
+	out[rgb_offset+z] = LIMIT_UBYTE(sum);
+	}
 
-int main(int argc, char** argv)
-{
+	int main(int argc, char** argv)
+	{
 		FILE* fp;
 		BITMAPFILEHEADER bmpHeader; /* BMP FILE INFO */
 		BITMAPINFOHEADER bmpInfoHeader; /* BMP IMAGE INFO */
 		//RGBQUAD *palrgb;
 		ubyte *inimg, *outimg;
 		if(argc != 3) {
-				fprintf(stderr, "usage : %s input.bmp output.bmp\n", argv[0]);
-				return -1;
+			fprintf(stderr, "usage : %s input.bmp output.bmp\n", argv[0]);
+			return -1;
 		}
 		/***** read bmp *****/
 		if((fp=fopen(argv[1], "rb")) == NULL) {
-				fprintf(stderr, "Error : Failed to open file...₩n");
-				return -1;
+			fprintf(stderr, "Error : Failed to open file...₩n");
+			return -1;
 		}
 		/* BITMAPFILEHEADER 구조체의 데이터 */
 		fread(&bmpHeader, sizeof(BITMAPFILEHEADER), 1, fp);
@@ -143,9 +143,9 @@ int main(int argc, char** argv)
 		fread(&bmpInfoHeader, sizeof(BITMAPINFOHEADER), 1, fp);
 		/* 트루 컬러를 지원하면 변환할 수 없다. */
 		if(bmpInfoHeader.biBitCount != 24) {
-				perror("This image file doesn't supports 24bit color\n");
-				fclose(fp);
-				return -1;
+			perror("This image file doesn't supports 24bit color\n");
+			fclose(fp);
+			return -1;
 		}
 
 		int elemSize = bmpInfoHeader.biBitCount/8.;
@@ -181,8 +181,8 @@ int main(int argc, char** argv)
 
 		/***** write bmp *****/
 		if((fp=fopen(argv[2], "wb"))==NULL) {
-				fprintf(stderr, "Error : Failed to open file...₩n");
-				return -1;
+			fprintf(stderr, "Error : Failed to open file...₩n");
+			return -1;
 		}
 		/*
 		   palrgb = (RGBQUAD*)malloc(sizeof(RGBQUAD)*256);
@@ -211,4 +211,4 @@ int main(int argc, char** argv)
 
 		printf("Success blur\n");
 		return 0;
-}
+	}
