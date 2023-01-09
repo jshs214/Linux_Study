@@ -36,7 +36,7 @@ __global__ void convertToMedian(ubyte *rgb, ubyte *out, int width, int height, i
 		int cnt = 0;
 		for(int i = -1; i < 2; i++) {
 			for(int j = -1; j < 2; j++) {
-				arr[cnt++] = rgb[((x+i)+(y+j)*height)*elemSize+z];
+				arr[cnt++] = rgb[(x+i)*elemSize+((y+j)*size)+z];
 			}
 		}
 	}
@@ -122,7 +122,7 @@ __global__ void convertToMedian(ubyte *rgb, ubyte *out, int width, int height, i
 	int cnt=0;
 	for(int i = -1; i < 2; i++) {
 		for(int j = -1; j < 2; j++) {
-			arr[cnt++] = rgb[((x+i)+(y+j)*height)*elemSize+z];
+			arr[cnt++] = rgb[(x+i)*elemSize+((y+j)*size)+z];
 		}
 	}
 
