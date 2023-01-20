@@ -136,7 +136,7 @@ __global__ void convertToBlur(ubyte *inimg, ubyte *out, int width, int height, i
 			arr[10] = arr[11] = inimg[(x-1)*elemSize+(y*size)+z];
 			arr[12] = inimg[offset+z];
 			arr[13] = inimg[(x+1)*elemSize+(y*size)+z];
-			arr[14] = inimg[(x+2)*elemSize+(y*size)];
+			arr[14] = inimg[(x+2)*elemSize+(y*size)+z];
 			arr[15] = arr[16] = inimg[(x-1)*elemSize+((y+1)*size)+z];
 			arr[17] = inimg[x*elemSize+((y+1)*size)+z];
 			arr[18] = inimg[(x+1)*elemSize+((y+1)*size)+z];
